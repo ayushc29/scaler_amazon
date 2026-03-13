@@ -10,6 +10,7 @@ import {
 import { db } from "../db/index.js";
 import { eq, and, inArray } from "drizzle-orm";
 import { USER_ID } from "../utils/constants.js";
+import { sendOrderConfirmationEmail } from "../services/email.service.js";
 
 export const getOrders = async (req, res) => {
   try {
@@ -140,8 +141,12 @@ export const checkout = async (req, res) => {
     const qty = rawQty ? Number(rawQty) : null;
 
     // validate address
-    const addrRows = await db.select().from(addresses).where(eq(addresses.id, addressId));
-    if (!addrRows.length) return res.status(400).json({ error: "Invalid address" });
+    const addrRows = await db
+      .select()
+      .from(addresses)
+      .where(eq(addresses.id, addressId));
+    if (!addrRows.length)
+      return res.status(400).json({ error: "Invalid address" });
     const addr = addrRows[0];
 
     let items = [];
@@ -171,7 +176,9 @@ export const checkout = async (req, res) => {
       const p = prodRows[0];
 
       if (typeof p.stock === "number" && qty > Number(p.stock)) {
-        return res.status(400).json({ error: `Insufficient stock for ${p.name}` });
+        return res
+          .status(400)
+          .json({ error: `Insufficient stock for ${p.name}` });
       }
 
       total = Number(p.price) * qty;
@@ -184,10 +191,12 @@ export const checkout = async (req, res) => {
           quantity: qty,
         },
       ];
-
     } else {
       // CART checkout path: load cart + its items
-      const cart = await db.select().from(carts).where(eq(carts.userId, USER_ID));
+      const cart = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.userId, USER_ID));
       if (!cart.length) return res.status(400).json({ error: "Cart is empty" });
 
       const cartItemsRows = await db
@@ -209,7 +218,9 @@ export const checkout = async (req, res) => {
       // validate stock and compute total
       for (const it of cartItemsRows) {
         if (typeof it.stock === "number" && it.quantity > Number(it.stock)) {
-          return res.status(400).json({ error: `Insufficient stock for ${it.productName}` });
+          return res
+            .status(400)
+            .json({ error: `Insufficient stock for ${it.productName}` });
         }
         total += Number(it.price) * it.quantity;
       }
@@ -251,7 +262,10 @@ export const checkout = async (req, res) => {
       });
 
       // decrement stock
-      const productRow = await db.select().from(products).where(eq(products.id, item.productId));
+      const productRow = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, item.productId));
       if (productRow.length && typeof productRow[0].stock === "number") {
         await db
           .update(products)
@@ -262,11 +276,23 @@ export const checkout = async (req, res) => {
 
     // If this was a cart checkout, clear cart items. For Buy Now we do NOT touch the cart.
     if (!productId) {
-      const cart = await db.select().from(carts).where(eq(carts.userId, USER_ID));
+      const cart = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.userId, USER_ID));
       if (cart.length) {
         await db.delete(cartItems).where(eq(cartItems.cartId, cart[0].id));
       }
     }
+
+    // send confirmation email (non-blocking)
+    sendOrderConfirmationEmail({
+      email: addr.email,
+      name: addr.name,
+      orderId: order[0].id,
+      items,
+      total,
+    }).catch(console.error);
 
     res.json({ orderId: order[0].id });
   } catch (err) {

@@ -11,7 +11,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: "https://scaler-amazon-one.vercel.app",
+    origin: [
+      "https://scaler-amazon-one.vercel.app",
+      "http://localhost:3000"
+    ],
     credentials: true,
   })
 );
