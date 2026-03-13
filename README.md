@@ -43,7 +43,10 @@ amazon-clone/
 │   │   │   ├── product.routes.js
 │   │   │   └── wishlist.routes.js
 │   │   ├── services/
-│   │   │   └── email.service.js
+│   │   │   ├── cart.service.js
+│   │   │   ├── email.service.js
+│   │   │   ├── order.service.js
+│   │   │   └── wishlist.service.js
 │   │   └── utils/
 │   │       └── constants.js
 │   ├── drizzle.config.js
