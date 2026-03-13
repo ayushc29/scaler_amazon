@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  --amazon-dark: #131921;
+  --amazon-light: #232f3e;
+  --amazon-yellow: #f0c14b;
+  --amazon-orange: #ff9900;
+}
+
+body {
+  background-color: #eaeded;
+}
