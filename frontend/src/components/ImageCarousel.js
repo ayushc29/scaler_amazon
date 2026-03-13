@@ -20,6 +20,10 @@ export default function ImageCarousel({ images = [], productName = "" }) {
     typeof window !== "undefined" &&
     ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
+  // Zoom configuration
+  const scale = 2.5;
+  const lensSize = 100 / scale; // 40% of the container
+
   function handleMouseMove(e) {
     if (!containerRef.current) return;
 
@@ -27,10 +31,14 @@ export default function ImageCarousel({ images = [], productName = "" }) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const xPercent = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const yPercent = Math.max(0, Math.min(100, (y / rect.height) * 100));
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
 
-    setZoomPos({ x: xPercent, y: yPercent });
+    // Clamp lens center so it doesn't go outside the container
+    const cx = Math.max(lensSize / 2, Math.min(100 - lensSize / 2, xPercent));
+    const cy = Math.max(lensSize / 2, Math.min(100 - lensSize / 2, yPercent));
+
+    setZoomPos({ x: cx, y: cy });
   }
 
   function handleMouseEnter() {
@@ -61,6 +69,9 @@ export default function ImageCarousel({ images = [], productName = "" }) {
     }
   }
 
+  const lensLeft = zoomPos.x - lensSize / 2;
+  const lensTop = zoomPos.y - lensSize / 2;
+
   return (
     <div className="w-full">
 
@@ -81,6 +92,7 @@ export default function ImageCarousel({ images = [], productName = "" }) {
                 alt={productName}
                 fill
                 className="object-contain"
+                referrerPolicy="no-referrer"
               />
             </div>
           ))}
@@ -113,7 +125,7 @@ export default function ImageCarousel({ images = [], productName = "" }) {
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => setActiveIndex(i)}
               className={`relative w-12 h-12 border rounded-sm overflow-hidden ${
-                i === activeIndex ? "border-[#c45500]" : "border-gray-200"
+                i === activeIndex ? "border-[#c45500] shadow-[0_0_3px_2px_rgba(228,121,17,0.5)]" : "border-gray-200 hover:border-gray-400"
               }`}
             >
               <Image
@@ -121,20 +133,21 @@ export default function ImageCarousel({ images = [], productName = "" }) {
                 alt={productName}
                 fill
                 className="object-contain p-1"
+                referrerPolicy="no-referrer"
               />
             </button>
           ))}
         </div>
 
         {/* image + zoom */}
-        <div className="flex flex-1 min-w-0 gap-4">
+        <div className="flex flex-1 min-w-0 gap-4 relative">
 
           <div
             ref={containerRef}
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className="relative w-full max-w-[520px] aspect-square bg-white border border-gray-100 flex items-center justify-center overflow-hidden cursor-zoom-in"
+            className="relative w-full max-w-[520px] aspect-square bg-white border border-gray-100 flex items-center justify-center overflow-hidden cursor-crosshair"
           >
             <Image
               src={imageUrl || "/placeholder.png"}
@@ -142,30 +155,43 @@ export default function ImageCarousel({ images = [], productName = "" }) {
               fill
               className="object-contain"
               priority
+              referrerPolicy="no-referrer"
             />
 
             {!isTouch && zoomVisible && (
               <div
                 style={{
-                  left: `calc(${zoomPos.x}% - 60px)`,
-                  top: `calc(${zoomPos.y}% - 60px)`,
+                  left: `${lensLeft}%`,
+                  top: `${lensTop}%`,
+                  width: `${lensSize}%`,
+                  height: `${lensSize}%`,
                 }}
-                className="pointer-events-none absolute w-36 h-36 bg-white/20 border border-white/40"
+                className="pointer-events-none absolute bg-blue-500/10 border border-blue-500/30 shadow-sm"
               />
             )}
           </div>
 
           {/* zoom pane only on large screens */}
           {!isTouch && zoomVisible && (
-            <div className="hidden lg:block relative w-[420px] h-[420px] border border-gray-100 overflow-hidden">
+            <div className="hidden lg:block absolute left-[calc(100%+16px)] top-0 w-[500px] h-[500px] border border-gray-200 overflow-hidden bg-white z-50 shadow-xl">
               <div
-                className="w-full h-full bg-no-repeat"
+                className="absolute"
                 style={{
-                  backgroundImage: `url(${imageUrl})`,
-                  backgroundSize: "200%",
-                  backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                  left: `${-lensLeft * scale}%`,
+                  top: `${-lensTop * scale}%`,
+                  width: `${scale * 100}%`,
+                  height: `${scale * 100}%`,
                 }}
-              />
+              >
+                <Image
+                  src={imageUrl || "/placeholder.png"}
+                  alt={productName}
+                  fill
+                  className="object-contain"
+                  priority
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             </div>
           )}
 
