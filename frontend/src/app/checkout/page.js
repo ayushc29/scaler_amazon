@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../lib/api";
 import Image from "next/image";
@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAppContext } from "../../context/AppContext";
 import AddressForm from "../../components/AddressForm";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { cart, refreshCart } = useAppContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -315,5 +315,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
