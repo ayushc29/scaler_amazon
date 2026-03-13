@@ -2,6 +2,7 @@ import { db } from "../db/index.js";
 import { carts, cartItems, products, productImages } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { USER_ID } from "../utils/constants.js";
+import { addToCartTransaction } from "../services/cart.service.js";
 
 export const getCart = async (req, res) => {
   try {
@@ -48,64 +49,15 @@ export const getCart = async (req, res) => {
 export const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
-    const q = Math.max(1, Math.floor(Number(quantity) || 1));
-    const MAX_PER_PRODUCT = 5;
-
-    // ensure cart exists
-    let cart = await db.select().from(carts).where(eq(carts.userId, USER_ID));
-    if (!cart.length) {
-      const newCart = await db.insert(carts).values({ userId: USER_ID }).returning();
-      cart = newCart;
-    }
-    const cartId = cart[0].id;
-
-    // fetch product (to check stock)
-    const productRows = await db.select().from(products).where(eq(products.id, productId));
-    if (!productRows.length) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-    const product = productRows[0];
-    const availableStock = Number(product.stock || 0);
-
-    // existing entry in cart
-    const existing = await db
-      .select()
-      .from(cartItems)
-      .where(and(eq(cartItems.cartId, cartId), eq(cartItems.productId, productId)));
-
-    const currentQty = existing.length ? Number(existing[0].quantity || 0) : 0;
-
-    // compute limits
-    const allowedByCap = Math.max(0, MAX_PER_PRODUCT - currentQty);
-    const allowedByStock = Math.max(0, availableStock - currentQty);
-    const allowedToAdd = Math.min(q, allowedByCap, allowedByStock);
-
-    if (allowedToAdd <= 0) {
-      // Nothing can be added
-      const reason =
-        allowedByStock <= 0
-          ? "Insufficient stock"
-          : "Reached maximum allowed quantity (5)";
-      return res.status(400).json({
-        error: reason,
-        added: 0,
-        quantity: currentQty,
-        allowedToAdd,
-        allowedByStock,
-        allowedByCap,
-      });
-    }
-
-    if (existing.length) {
-      const newQty = currentQty + allowedToAdd;
-      await db.update(cartItems).set({ quantity: newQty }).where(eq(cartItems.id, existing[0].id));
-      return res.json({ message: "Added to cart", added: allowedToAdd, quantity: newQty });
-    } else {
-      await db.insert(cartItems).values({ cartId, productId, quantity: allowedToAdd });
-      return res.json({ message: "Added to cart", added: allowedToAdd, quantity: allowedToAdd });
-    }
+    
+    const result = await addToCartTransaction(USER_ID, productId, quantity);
+    
+    return res.json({ message: "Added to cart", ...result });
   } catch (err) {
     console.error(err);
+    if (err.message.includes("not found") || err.message.includes("Insufficient") || err.message.includes("maximum")) {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(500).json({ error: "Failed to add to cart" });
   }
 };

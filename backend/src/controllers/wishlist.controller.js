@@ -5,8 +5,8 @@ import {
   products,
   productImages,
 } from "../db/schema.js";
-
 import { eq, and } from "drizzle-orm";
+import { addToWishlistTransaction } from "../services/wishlist.service.js";
 import { USER_ID } from "../utils/constants.js";
 
 export const getWishlist = async (req, res) => {
@@ -43,41 +43,8 @@ export const getWishlist = async (req, res) => {
 export const addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
-
-    let wishlist = await db
-      .select()
-      .from(wishlists)
-      .where(eq(wishlists.userId, USER_ID));
-
-    if (!wishlist.length) {
-      const newWishlist = await db
-        .insert(wishlists)
-        .values({ userId: USER_ID })
-        .returning();
-
-      wishlist = newWishlist;
-    }
-
-    const exists = await db
-      .select()
-      .from(wishlistItems)
-      .where(
-        and(
-          eq(wishlistItems.wishlistId, wishlist[0].id),
-          eq(wishlistItems.productId, productId),
-        ),
-      );
-
-    if (exists.length) {
-      return res.json({ message: "Already in wishlist" });
-    }
-
-    await db.insert(wishlistItems).values({
-      wishlistId: wishlist[0].id,
-      productId,
-    });
-
-    res.json({ message: "Added to wishlist" });
+    const result = await addToWishlistTransaction(USER_ID, productId);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: "Failed to add to wishlist" });
   }

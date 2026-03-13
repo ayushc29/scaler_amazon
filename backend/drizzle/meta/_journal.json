@@ -15,6 +15,13 @@
       "when": 1773293500033,
       "tag": "0001_lame_the_captain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773504787573,
+      "tag": "0002_sharp_captain_flint",
+      "breakpoints": true
     }
   ]
 }
