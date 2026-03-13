@@ -8,7 +8,7 @@ import {
   addresses,
 } from "../db/schema.js";
 import { db } from "../db/index.js";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 import { USER_ID } from "../utils/constants.js";
 import { sendOrderConfirmationEmail } from "../services/email.service.js";
 
@@ -18,7 +18,7 @@ export const getOrders = async (req, res) => {
       .select()
       .from(orders)
       .where(eq(orders.userId, USER_ID))
-      .orderBy(orders.createdAt);
+      .orderBy(desc(orders.createdAt));
 
     if (!result.length) return res.json([]);
 
