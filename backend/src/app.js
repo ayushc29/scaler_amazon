@@ -9,10 +9,13 @@ import addressRoutes from "./routes/address.routes.js";
 
 const app = express();
 
-app.use(cors({
-  origin: "https://scaler-amazon-one.vercel.app/",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "https://scaler-amazon-one.vercel.app",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use("/api", productRoutes);
