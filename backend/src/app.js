@@ -26,8 +26,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/",(res)=>{
-    res.json({message: "Running..."});
+app.get("/", (req, res) => {
+  res.json({ message: "API running" });
 });
 
 app.use("/api", productRoutes);
