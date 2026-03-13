@@ -5,9 +5,9 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "../lib/api";
 import ProductGrid from "../components/ProductGrid";
-import ProductCard from "../components/ProductCard";
 import HomeDeals from "../components/HomeDeals";
 import HeroCarousel from "../components/HeroCarousel";
+import RecentlyViewed from "../components/RecentlyViewed";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -146,7 +146,6 @@ function HomeContent() {
               />
             </div>
 
-            {/* PAGINATION ONLY FOR SEARCH / CATEGORY */}
             {!isHomePage && (
               <div className="flex justify-center gap-4 my-8 items-center">
                 {page > 1 ? (
@@ -187,17 +186,8 @@ function HomeContent() {
 
             {/* RECENTLY VIEWED */}
             {isHomePage && recentlyViewed.length > 0 && (
-              <div className="mt-12 bg-white p-4 rounded-sm shadow-sm">
-                <h2 className="text-xl font-bold mb-4">
-                  Related to items you&apos;ve viewed
-                </h2>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                  {recentlyViewed.map((p) => (
-                    <div key={p.id} className="min-w-[200px] max-w-[200px]">
-                      <ProductCard product={p} />
-                    </div>
-                  ))}
-                </div>
+              <div className="max-w-[1500px] mx-auto px-4 mt-6">
+                <RecentlyViewed max={6} />
               </div>
             )}
           </>
